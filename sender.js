@@ -15,6 +15,7 @@
 	var tableService = azureStorage.createTableService(storageAccount,tableStorageKey);
 	
 	var app = express();
+	var index = require('index.html');
 	
 	var msgReceived = 0;
 	var batchNo = 0;
@@ -28,7 +29,16 @@
 	var startTime;
 	var stopTime;
 	var elapsed;
-	var working2;
+	
+	
+	app.use(function(req, res, next) {
+		res.header("Access-Control-Allow-Origin", "*");
+		res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+		next();
+	});
+	
+	
+	
 	
 	var checkMessageCount = function (queueName,sbService){
 		sbService.getQueue(queueName, function(err, queue){
@@ -158,7 +168,7 @@
 		var diff = msgQueueId - msgReceived ;
 		if(diff <= 200){
 			var serviceBusService = azure.createServiceBusService(connectionString);
-			var qName = 'testqueue2';
+			var qName = 'testqueue';
 			
 			 serviceBusService.getQueue(qName, function(err, queue){
 				if (err) {
@@ -254,6 +264,7 @@
 	app.get('/', function(req, res){
 		res.send('<h1>HI :)</h1>');
 	});
+	
 	
 	app.get('/blast/:queue', function (req, res) {
 		send500(req.params.queue);
