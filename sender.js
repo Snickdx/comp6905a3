@@ -29,7 +29,7 @@
 	var startTime;
 	var stopTime;
 	var elapsed;
-	var port  	 = process.env.PORT || 3000; 				// set the port
+	var port  	 = process.env.PORT || 8080; 				// set the port
 	var bodyParser = require('body-parser'); 	// pull information from HTML POST (express4)
 	var methodOverride = require('method-override'); // simulate DELETE and PUT (express4)
 	
@@ -316,7 +316,7 @@
 	});
 	
 	app.listen(port, function () {
-	  console.log(hostName+' Example app listening on port'+port);
+	  console.log(hostName+' Example app listening on port '+port);
 		working = false;
 		setInterval(senderLoop,3000);
 	})
