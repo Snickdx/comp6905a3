@@ -8,6 +8,7 @@
 	var async = require("async");
 	var azure = require('azure-sb');
 	var azureStorage = require('azure-storage');
+	var path = require('path');
 	
 	var connectionString ="Endpoint=sb://test806003586.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=Op1irpLtHBbGyR0sA4nWBQkCtp1xIJiIrpPfiozjusY=";
 	var tableStorageKey ="33MfV7gjfiTBwArgm36pHRi7tik8BUbmUUE1MIEN5sWUgahPLIm5WImfPrcB2aJfdCrJW6h4N+Mlha8oXkcxbg==";
@@ -15,7 +16,6 @@
 	var tableService = azureStorage.createTableService(storageAccount,tableStorageKey);
 	
 	var app = express();
-	var index = require('index.html');
 	
 	var msgReceived = 0;
 	var batchNo = 0;
@@ -29,15 +29,21 @@
 	var startTime;
 	var stopTime;
 	var elapsed;
+	var port  	 = process.env.PORT || 3000; 				// set the port
+	var bodyParser = require('body-parser'); 	// pull information from HTML POST (express4)
+	var methodOverride = require('method-override'); // simulate DELETE and PUT (express4)
 	
+	app.use(express.static(__dirname + '/public')); 				// set the static files location /public/img will be /img for users
+	app.use(bodyParser.urlencoded({'extended':'true'})); 			// parse application/x-www-form-urlencoded
+	app.use(bodyParser.json()); 									// parse application/json
+	app.use(bodyParser.json({ type: 'application/vnd.api+json' })); // parse application/vnd.api+json as json
+	app.use(methodOverride());
 	
 	app.use(function(req, res, next) {
 		res.header("Access-Control-Allow-Origin", "*");
 		res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
 		next();
 	});
-	
-	
 	
 	
 	var checkMessageCount = function (queueName,sbService){
@@ -261,8 +267,8 @@
 			}
 	};
 	
-	app.get('/', function(req, res){
-		res.send('<h1>HI :)</h1>');
+	app.get('/', function(req, res) {
+		res.sendFile(path.join(__dirname, 'public', 'index.html'));
 	});
 	
 	
@@ -285,20 +291,32 @@
 	});
 	
 	app.get('/start', function (req, res) {
+		res.header('Access-Control-Allow-Origin', req.headers.origin || "*");
+		res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,HEAD,DELETE,OPTIONS');
+		res.header('Access-Control-Allow-Headers', 'content-Type,x-requested-with');
 		working = true;
 		startTime = new Date();
 		res.send("Working "+working);
 	});
 	
+	app.get('/getCount', function (req, res) {
+		res.send(JSON.stringify(
+			{
+				count: sentCount+errorCount,
+				time: elapsed = moment.utc(moment(new Date(),"DD/MM/YYYY HH:mm:ss").diff(moment(startTime,"DD/MM/YYYY HH:mm:ss"))).format("HH:mm:ss")
+			}
+		));
+	});
+	
 	app.get('/stop', function (req, res) {
 		working = false;
 		stopTime = new Date();
+		console.log('stopped');
 		res.send("Working "+working);
 	});
 	
-	app.listen(3000, function () {
-	  console.log(hostName+' Example app listening on port 80!');
-	  //setInterval(start,3000);
+	app.listen(port, function () {
+	  console.log(hostName+' Example app listening on port'+port);
 		working = false;
 		setInterval(senderLoop,3000);
 	})
