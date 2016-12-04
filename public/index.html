@@ -227,7 +227,10 @@
         };
 
 		$scope.refreshReceiver = function(){
+
             $scope.scales.map(function(vm){
+            	vm.vms = [];
+            	vm.vmcount = 0;
             	for(var i=1; i<=4; i++){
 		            get(
 		            	vm.url+":"+(79+i),
