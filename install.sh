@@ -14,3 +14,7 @@ sudo npm install
 sudo npm install forever -g
 sudo forever start ''$workserver_path'/comp6905a3/sender.js'
 sudo forever list
+sudo echo $1
+sudo echo $2
+#sudo runuser -l admin806003586 -c 'sudo forever start '$workserver_path'/comp6905a3/sender.js'
+#sudo runuser -l admin806003586 -c 'sudo forever list'
