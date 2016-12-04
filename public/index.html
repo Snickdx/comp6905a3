@@ -24,26 +24,27 @@
 </nav>
 
 <!-- Main jumbotron for a primary marketing message or call to action -->
-<div class="panel" style="margin-top: 10%">
+<div class="panel" >
 
-    <div class="container">
-        <h2>Sender</h2>
-        <h3>Implementation</h3>
+    <!--<div class="container">-->
+        <!--<h2>Sender</h2>-->
+        <!--<h3>Implementation</h3>-->
 
-        <h3>Error Rate</h3>
+        <!--<h3>Error Rate</h3>-->
 
-    </div>
-    <div class="container">
-        <h2>Receiver</h2>
-        <h3>Implementation</h3>
+    <!--</div>-->
+    <!--<div class="container">-->
+        <!--<h2>Receiver</h2>-->
+        <!--<h3>Implementation</h3>-->
 
-        <h3>Scale</h3>
+        <!--<h3>Scale</h3>-->
 
 
-    </div>
+    <!--</div>-->
     <div class="container" ng-init="retrieve()">
 
-        <h2>Sender Monitor {{count}}</h2>
+        <h2>Sender Monitor </h2>
+        <h3>Sender Total {{count}}</h3>
         <div class=" well col-sm-12">
             <div>
                 <form class="form-inline">
@@ -58,6 +59,7 @@
             <br>
             <div ng-repeat="vm in vms track by $index" class="panel panel-default">
                 <div class="panel-body">
+                    <div>Sender VM{{$index+1}}</div>
                     <div class="col ">URL {{vm.url}}</div>
                     <div class="col">Status {{vm.status}}</div>
                     <div class="col">Request Count {{vm.count}}</div>
@@ -66,8 +68,24 @@
             </div>
         </div>
     </div>
+
+    <div class="container">
+        <div class="btn-group btn-group-justified" role="group" aria-label="...">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-success" ng-click="startSender()">Start</button>
+            </div>
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-primary" ng-click="refreshSender()">Refresh</button>
+            </div>
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-danger" ng-click="stopSender()">Stop</button>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <h2>Receiver Monitor</h2>
+        <h3>Service Bus Size {{busLength}}</h3>
         <div class="well">
             <div>
                 <form class="form-inline">
@@ -80,9 +98,14 @@
                 <br>
                 <div ng-repeat="vm in scales track by $index" class="panel panel-default">
                     <div class="panel-body">
+                        <div>Scale Set {{$index+1}}</div>
                         <div class="col ">URL {{vm.url}}</div>
                         <div class="col">VM Count {{vm.vmcount}}</div>
-                        <div class="col" ng-repeat="vm in vm.vms">{{vm | json}}</div>
+                        <div class="col">Status {{vm.status}}</div>
+                        <p>
+                            <span ng-repeat="subvm in vm.vms track by $index">VM{{$index+1}} </span>
+                        </p>
+
                     </div>
                 </div>
             </div>
@@ -91,13 +114,13 @@
     <div class="container">
         <div class="btn-group btn-group-justified" role="group" aria-label="...">
             <div class="btn-group" role="group">
-                <button type="button" class="btn btn-success" ng-click="start()">Start</button>
+                <button type="button" class="btn btn-success" ng-click="startReceiver()">Start</button>
             </div>
             <div class="btn-group" role="group">
-                <button type="button" class="btn btn-primary" ng-click="refresh()">Refresh</button>
+                <button type="button" class="btn btn-primary" ng-click="refreshReceiver()">Refresh</button>
             </div>
             <div class="btn-group" role="group">
-                <button type="button" class="btn btn-danger" ng-click="stop()">Stop</button>
+                <button type="button" class="btn btn-danger" ng-click="stopReceiver()">Stop</button>
             </div>
         </div>
     </div>
@@ -180,7 +203,8 @@
 			$scope.scales.push({
 				url:$scope.newScaleSet,
 				vmcount:0,
-				vms:[]
+				vms:[],
+                status:''
 			});
 
 			if (typeof(Storage) !== "undefined") {
@@ -192,7 +216,7 @@
 			$scope.newurl = "http//";
 		};
 
-		$scope.refresh = function(){
+		$scope.refreshSender = function(){
 			$scope.vms.map(function(vm){
 				get(vm.url, "/getCount", function(response){
 					vm.count=response.data.count;
@@ -200,12 +224,16 @@
 					$scope.count+=response.data.count;
 				});
 			});
+        };
+
+		$scope.refreshReceiver = function(){
             $scope.scales.map(function(vm){
             	for(var i=1; i<=4; i++){
 		            get(
 		            	vm.url+":"+(79+i),
                         "/count",
                         function(response){
+		            		vm.vmcount++;
 			                vm.vms.push("vm: "+(i+1))
 		                },
                         function(err){
@@ -219,8 +247,7 @@
             });
         };
 
-
-		$scope.start = function(){
+		$scope.startSender = function(){
 			$scope.vms.map(function(vm){
 				get(vm.url, "/start", function(response){
 					vm.status=response.data;
@@ -228,13 +255,29 @@
             })
         };
 
-		$scope.stop = function(){
+		$scope.stopSender = function(){
 			$scope.vms.map(function(vm){
 				get(vm.url, "/stop", function(response){
 					vm.status=response.data;
 				});
 			})
         };
+
+		$scope.startReceiver = function(){
+			$scope.scales.map(function(vm){
+				get(vm.url, "/start", function(response){
+					vm.status=response.data;
+				});
+			})
+		};
+
+		$scope.stopReceiver = function(){
+			$scope.scales.map(function(vm){
+				get(vm.url, "/stop", function(response){
+					vm.status=response.data;
+				});
+			})
+		};
 
 
 
