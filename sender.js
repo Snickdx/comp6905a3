@@ -1,5 +1,5 @@
 (function(){
-
+	
 	const os = require('os');
 	const hostName = os.hostname();
 	var express = require('express');
@@ -10,7 +10,7 @@
 	var azureStorage = require('azure-storage');
 	var path = require('path');
 	
-	var connectionString ="Endpoint=sb://test806003586.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=Op1irpLtHBbGyR0sA4nWBQkCtp1xIJiIrpPfiozjusY=";
+	var connectionString ="Endpoint=sb://workqueue.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=lsDykEMJdiJj8PyrcLhcWwOa4ZiXR0zJjOlmE2lam7k=";
 	var tableStorageKey ="33MfV7gjfiTBwArgm36pHRi7tik8BUbmUUE1MIEN5sWUgahPLIm5WImfPrcB2aJfdCrJW6h4N+Mlha8oXkcxbg==";
 	var storageAccount ="defaultstorage806003586";
 	var tableService = azureStorage.createTableService(storageAccount,tableStorageKey);
@@ -21,7 +21,7 @@
 	var batchNo = 0;
 	var msgQueueId =0;
 	var serviceBusService = azure.createServiceBusService(connectionString);
-	var qName = 'testqueue2';
+	var qName = 'q1';
 	var working = true;
 	var successSend = 0;
 	var sentCount =0;
@@ -29,6 +29,7 @@
 	var startTime;
 	var stopTime;
 	var elapsed;
+	var jsonData;
 	var port  	 = process.env.PORT || 8080; 				// set the port
 	var bodyParser = require('body-parser'); 	// pull information from HTML POST (express4)
 	var methodOverride = require('method-override'); // simulate DELETE and PUT (express4)
@@ -38,7 +39,6 @@
 	app.use(bodyParser.json()); 									// parse application/json
 	app.use(bodyParser.json({ type: 'application/vnd.api+json' })); // parse application/vnd.api+json as json
 	app.use(methodOverride());
-	
 	app.use(function(req, res, next) {
 		res.header("Access-Control-Allow-Origin", "*");
 		res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
@@ -46,46 +46,33 @@
 	});
 	
 	
-	var checkMessageCount = function (queueName,sbService){
-		sbService.getQueue(queueName, function(err, queue){
-			if (err) {
-				console.log('Error on get queue length: ', err);
-			} else {
-				// length of queue (active messages ready to read)
-				var length = queue.CountDetails['d2p1:ActiveMessageCount'];
-				console.log(length + ' messages currently in the queue');
-				return length;
-			}
-		});
-	};
-
 	var saveToTable = function(eType,data){
 		var entGen = azureStorage.TableUtilities.entityGenerator;
 		var date  = (new Date).toISOString();
 		//console.log(entGen.String(date));	
 		var entity = {
-		  PartitionKey: entGen.String(hostName) ,
-		  RowKey: entGen.String(date),
-		  ErrorType: entGen.String(eType.toString()),
-		  Json:entGen.String(JSON.stringify(data))
+			PartitionKey: entGen.String(hostName) ,
+			RowKey: entGen.String(date),
+			ErrorType: entGen.String(eType.toString()),
+			Json:entGen.String(JSON.stringify(data))
 		};
 		
 		var count = 0;
 		
-		var trySave = function(data){	
+		var trySave = function(data){
 			tableService.insertEntity('Messages', entity, function(error, result, response) {
-			  if (!error) {
-				// result contains the ETag for the new entity
-				//console.log(result);				
-			  }
-			  else{
-				count++;
-				console.log("Table-Storage-error-Retry "+count+" of 10");
-				console.log(error);
-				if(count < 10){
-					trySave(data);
+				if (!error) {
+					// result contains the ETag for the new entity
+					//console.log(result);
 				}
-			  }
+				else{
+					count++;
+					console.log("Table-Storage-error-Retry "+count+" of 10");
+					console.log(error);
+					if(count < 10){
+						trySave(data);
+					}
+				}
 			});
 		};
 		
@@ -95,10 +82,10 @@
 	};
 	
 	var doWork = function(batchSize,batchNo){
-		var i; 
+		var i;
 		//node does this async
-		for(i=0; i < batchSize; i++){	  
-		
+		for(i=0; i < batchSize; i++){
+			
 			(function(msgId,batchId){
 				serviceBusService.receiveQueueMessage(qName, { isPeekLock: true }, function(error, lockedMessage){
 					if(!error){
@@ -111,7 +98,7 @@
 						if(msgId % 300 == 0){
 							//a simulated failure
 							saveToTable("Message-Failure",lockedMessage);
-						}						
+						}
 						
 						//Delete message from queue
 						serviceBusService.deleteMessage(lockedMessage, function (deleteError){
@@ -146,37 +133,36 @@
 			msgQueueId++;
 		}
 	};
-
+	
 	var runBatch = function(length){
-		  //console.log("queued "+msgQueueId +" received " +msgReceived);
-		  
-		  if(length > 0){
-			  var diff = msgQueueId - msgReceived ;
-			  var max = 1000 - diff;
-			  
-			  batchNo++;
-			  if(length < max){
-				  doWork(length,batchNo);
-			  }
-			  else{
-				  doWork(max,batchNo);
-			  }
-			  //res.send('started batch '+batchNo + "queued "+msgQueueId +" received " +msgReceived);
-			  console.log('started batch '+batchNo + "queued "+msgQueueId +" received " +msgReceived +" length " + length);
-		  }
-		  else{
+		//console.log("queued "+msgQueueId +" received " +msgReceived);
+		
+		if(length > 0){
+			var diff = msgQueueId - msgReceived ;
+			var max = 1000 - diff;
+			
+			batchNo++;
+			if(length < max){
+				doWork(length,batchNo);
+			}
+			else{
+				doWork(max,batchNo);
+			}
+			//res.send('started batch '+batchNo + "queued "+msgQueueId +" received " +msgReceived);
+			console.log('started batch '+batchNo + "queued "+msgQueueId +" received " +msgReceived +" length " + length);
+		}
+		else{
 			//res.send('load '+ (msgQueueId - msgReceived));
 			console.log('load '+ (msgQueueId - msgReceived) +" length " + length);
-		  }
+		}
 	};
 	
 	var start = function(){
 		var diff = msgQueueId - msgReceived ;
 		if(diff <= 200){
 			var serviceBusService = azure.createServiceBusService(connectionString);
-			var qName = 'testqueue';
 			
-			 serviceBusService.getQueue(qName, function(err, queue){
+			serviceBusService.getQueue(qName, function(err, queue){
 				if (err) {
 					console.log('Error on get queue length: ', err);
 				} else {
@@ -188,8 +174,8 @@
 				}
 			});
 		}
-		  
-	 };
+		
+	};
 	
 	var send500 = function(queue){
 		fs.readFile('data-500.json', 'utf8', function (err, data) {
@@ -236,41 +222,57 @@
 	
 	var senderLoop = function () {
 		if(working === true) {
-			var sendQueueName = 'testqueue2';
 			var diff = sentCount - successSend;
 			var limit = 500;
 			if (diff < limit) {
-				senderN(sendQueueName, limit - diff);
+				senderN(qName, limit - diff);
 			}
 		}
 	};
 	
 	var senderN = function(sendQueueName, n){
-			var serviceBusService = azure.createServiceBusService(connectionString);
-			var i;
-			var message = "Hello World!";
-			for(i=0;i < n;i++) {
-					serviceBusService.sendQueueMessage(sendQueueName, message, function (err) {
-						if (err) {
-							//increment errror count
-							errorCount++;
-							console.log(err);
-						} else {
-							//incremenet count for success
-							successSend++;
-							elapsed = moment.utc(moment(new Date(),"DD/MM/YYYY HH:mm:ss").diff(moment(startTime,"DD/MM/YYYY HH:mm:ss"))).format("HH:mm:ss");
-							console.log("Success Count "+ successSend+" Time: "+elapsed);
-						}
-						//increment a count for received
-					});
-					sentCount++;
+		var serviceBusService = azure.createServiceBusService(connectionString);
+		var message;
+		
+		for(var i=0;i < n;i++) {
+			
+			var error = successSend%10 === 2;//1 in 10 error rate
+			if(error){
+				//noinspection JSAnnotator
+				message = `{
+				"Transaction Date": "2014-06-03T17:07:28+00:00",
+					"Sale Price": 11768,
+					"ProductName": "Error",
+					"SellerID": "C3",
+					"UserID": "E5",
+					"TransactionID": 463
+				}`;
+				console.log('error = '+ error);
+			}else{
+				jsonData[i].TransactionID = successSend;
+				message = JSON.stringify(jsonData[i]);
 			}
+			
+			serviceBusService.sendQueueMessage(sendQueueName, message, function (err) {
+				if (err) {
+					//increment error count
+					errorCount++;
+					console.log(err);
+				} else {
+					//increment count for success
+					successSend++;
+					elapsed = moment.utc(moment(new Date(),"DD/MM/YYYY HH:mm:ss").diff(moment(startTime,"DD/MM/YYYY HH:mm:ss"))).format("HH:mm:ss");
+					console.log("Success Count "+ successSend+" Time: "+elapsed);
+				}
+				//increment a count for received
+			});
+			sentCount++;
+		}
 	};
 	
 	app.get('/', function(req, res) {
 		res.sendFile(path.join(__dirname, 'public', 'index.html'));
 	});
-	
 	
 	app.get('/blast/:queue', function (req, res) {
 		send500(req.params.queue);
@@ -316,8 +318,12 @@
 	});
 	
 	app.listen(port, function () {
-	  console.log(hostName+' Example app listening on port '+port);
+		console.log(hostName+' Example app listening on port '+port);
 		working = false;
+		fs.readFile('data/data-500.json', 'utf8', function (err, data) {
+			jsonData = JSON.parse(data);
+			console.log('Json data loaded');
+		});
 		setInterval(senderLoop,3000);
 	})
 })();
