@@ -3,6 +3,7 @@
 	const os = require('os');
 	const hostName = os.hostname();
 	var express = require('express');
+	var request = require('request');
 	var moment = require('moment');
 	var fs = require('fs');
 	var async = require("async");
@@ -39,6 +40,7 @@
 	app.use(bodyParser.json()); 									// parse application/json
 	app.use(bodyParser.json({ type: 'application/vnd.api+json' })); // parse application/vnd.api+json as json
 	app.use(methodOverride());
+	
 	app.use(function(req, res, next) {
 		res.header("Access-Control-Allow-Origin", "*");
 		res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
@@ -317,13 +319,30 @@
 		res.send("Working "+working);
 	});
 	
+	app.get('/getSBLength', function(req, res){
+		serviceBusService.getQueue(qName, function(err, queue){
+			if (err) {
+				console.log('Error on get queue length: ', err);
+				res.send(JSON.stringify(-1));
+			} else {
+				// length of queue (active messages ready to read)
+				var length = queue.CountDetails['d2p1:ActiveMessageCount'];
+				res.send(JSON.stringify(length));
+			}
+		});
+	});
+	
+	
 	app.listen(port, function () {
 		console.log(hostName+' Example app listening on port '+port);
 		working = false;
-		fs.readFile('data/data-500.json', 'utf8', function (err, data) {
-			jsonData = JSON.parse(data);
-			console.log('Json data loaded');
+		request('https://raw.githubusercontent.com/Snickdx/comp6905a3/master/data/data-500.json', function (error, response, body) {
+			if (!error && response.statusCode == 200) {
+				jsonData = JSON.parse(body);
+				console.log('Json data loaded');
+				setInterval(senderLoop,3000);
+			}
 		});
-		setInterval(senderLoop,3000);
+		
 	})
 })();
