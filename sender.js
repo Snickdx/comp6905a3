@@ -31,7 +31,7 @@
 	var stopTime;
 	var elapsed;
 	var jsonData;
-	var port  	 = process.env.PORT || 8080; 				// set the port
+	var port  	 = process.env.PORT || 80; 				// set the port
 	var bodyParser = require('body-parser'); 	// pull information from HTML POST (express4)
 	var methodOverride = require('method-override'); // simulate DELETE and PUT (express4)
 	
