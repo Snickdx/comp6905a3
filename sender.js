@@ -10,6 +10,7 @@
 	var azure = require('azure-sb');
 	var azureStorage = require('azure-storage');
 	var path = require('path');
+	var firebase = require('firebase');
 	
 	var connectionString ="Endpoint=sb://workqueue.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=lsDykEMJdiJj8PyrcLhcWwOa4ZiXR0zJjOlmE2lam7k=";
 	var tableStorageKey ="33MfV7gjfiTBwArgm36pHRi7tik8BUbmUUE1MIEN5sWUgahPLIm5WImfPrcB2aJfdCrJW6h4N+Mlha8oXkcxbg==";
@@ -34,6 +35,7 @@
 	var port  	 = process.env.PORT || 80; 				// set the port
 	var bodyParser = require('body-parser'); 	// pull information from HTML POST (express4)
 	var methodOverride = require('method-override'); // simulate DELETE and PUT (express4)
+	
 	
 	app.use(express.static(__dirname + '/public')); 				// set the static files location /public/img will be /img for users
 	app.use(bodyParser.urlencoded({'extended':'true'})); 			// parse application/x-www-form-urlencoded

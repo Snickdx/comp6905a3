@@ -129,12 +129,31 @@
 
 
 <script src="angular.min.js"></script><!-- load angular -->
+<script src="https://www.gstatic.com/firebasejs/3.6.1/firebase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angularFire/2.1.0/angularfire.min.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 <script>
-	var app = angular.module('app', []);
+	var config = {
+		apiKey: "AIzaSyDmuJBICvJPCpq3D0FPsan7IfzjAXhmz5c",
+		authDomain: "comp6950a2.firebaseapp.com",
+		databaseURL: "https://comp6950a2.firebaseio.com",
+		storageBucket: "comp6950a2.appspot.com",
+		messagingSenderId: "686237011839"
+	};
+	firebase.initializeApp(config);
+</script>
+<script>
+	var app = angular.module('app', ['firebase']);
 
-	app.controller('mainController', function($scope, $http){
+	app.controller('mainController', function($scope, $http, $firebaseArray){
+
+		$scope.senders =  $firebaseArray('https://comp6950a2.firebaseio.com/senders');
+
+		$scope.senders.$loaded(function(data){
+			console.log(data);
+			$scope.senders.add("lol");
+        });
 
 		var get = function(url, route, callback, callback2){
 			$http.get(url+route)
